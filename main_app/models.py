@@ -13,13 +13,13 @@ from djmoney.models.fields import MoneyField
 class User(AbstractUser): 
     username=None
     email=None 
-    password=None
     #מזהה מערכת פנימי KEY ייחודי
     app_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     #הגדרת טלפון כמזהה ייחודי וברירת מחדל להתחברות
     phone = models.CharField(max_length=10, unique=True)
     USERNAME_FIELD="phone"
     REQUIRED_FIELDS=[]
+   # is_phone_verfied=
     preferred_currency = models.CharField(max_length=5, default="ILS")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -35,19 +35,36 @@ class User(AbstractUser):
     )
 # צריך להסויף עוד מכשירים פינסים אחר כך
 class Account(models.Model):
+    
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="accounts")
+    
     ACCOUNT_TYPES = (
-        ("bank", "שם בנק"),
-        ("credit_card", "כרטיסי אשראי"),
-        ("investment_account","חשבון השקעות")
-        ("pension_account","ביטוח פנסיה"))
-     
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="accounts"
-)
+        ("bank", "Bank name"),
+        ("credit_card", "Credit Card"),
+    #    ("investment_account", "Investment Account"),
+    #    ("pension_account", "Pension Account")
+    )
+    
+    PROVIDERS = (
+        ("pepper", "Pepper"),
+        ("leumi", "Bank Leumi"),
+        ("max", "Max Credit"),
+        ("isracard", "Isracard"),
+        ("cal", "CAL"),
+        ("unknown", "Unknown Provider"))
+    
+    provider = models.CharField(
+        max_length=30,
+        choices=PROVIDERS,
+        default="unknown")
+    
+   
     account_type = models.CharField(
         max_length=20,
         choices=ACCOUNT_TYPES,
     )
-    #bank_name = models.CharField(max_length=50, blank=True)
+    
     initial_balance = MoneyField(
         max_digits=10, decimal_places=2, default_currency="ILS"
     )
@@ -60,8 +77,10 @@ class Account(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
 
-   
+
+   # לMVP מקבלים CSV של לאומי(ופפר) וכרטיסי MAX וישרכארט
 class Transaction(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     INCOME = "in"
     EXPENSE = "ex"
     TRANSACTION_TYPE = [
