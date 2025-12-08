@@ -152,7 +152,7 @@ class Category(models.Model):
     #  icon = models.CharField(max_length=50, blank=True, null=True)
 
     #  created_at = models.DateTimeField(auto_now_add=True)
-    #  updated_at = models.DateTimeField(auto_now=True)
+    #updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -161,27 +161,91 @@ class Category(models.Model):
    # לMVP מקבלים CSV של לאומי(ופפר) וכרטיסי MAX וישרכארט
 class Transaction(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    INCOME = "in"
-    EXPENSE = "ex"
-    TRANSACTION_TYPE = [
-        (INCOME, "Income"),
-        (EXPENSE, "Expense"),
-    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    description = models.CharField(max_length=255, blank=True)
+    
     account = models.ForeignKey(
         "Account", on_delete=models.CASCADE, related_name="transactions"
     )
-    amount = MoneyField(max_digits=10, decimal_places=2, default_currency="USD")
+    
+    INCOME = "income"
+    EXPENSE = "expense"
+    # TRANSFER_OUT = "transfer_out"     
+    # TRANSFER_IN = "transfer_in"       
+    # REFUND = "refund"                 
+    # FEE = "fee"                       
+    # ATM_WITHDRAW = "atm_withdraw"     
+    # DEPOSIT = "deposit"               
+    
+    TRANSACTION_TYPE = [
+        (INCOME, "Income"),
+        (EXPENSE, "Expense"),
+        # (TRANSFER_OUT, "Transfer Out"),
+        # (TRANSFER_IN, "Transfer In"),
+        # (REFUND, "Refund"),
+        # (FEE, "Fee"),
+        # (ATM_WITHDRAW, "ATM Withdraw"),
+        # (DEPOSIT, "Deposit"),
+    ]
+    
     transaction_type = models.CharField(
         max_length=2, choices=TRANSACTION_TYPE, default=EXPENSE
     )
-    is_recurring = models.BooleanField(default=False)
-    date = models.DateField()
+   
+    amount = MoneyField(max_digits=10, decimal_places=2, default_currency="ILS")
+    
+    date=models.DateField()
+    
+    description = models.CharField(max_length=255)
+    
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions"
+    )
+    
+     # מזהה ייחודי מה־CSV למניעת כפילויות
+    source_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Unique ID per CSV row to prevent duplicates"
+    )
+    # אולי בתור מודל נפרד
+    #is_recurring = models.BooleanField(default=False)
+    
+     # האם העסקה סווגה אוטומטית או שהמשתמש תיקן אותה ידנית
+    AUTO = "auto"
+    MANUAL = "manual"
+
+    CLASSIFICATION_TYPES = [
+        (AUTO, "Auto"),
+        (MANUAL, "Manual"),
+    ]
+
+    classification_type = models.CharField(
+        max_length=10,
+        choices=CLASSIFICATION_TYPES,
+        default=AUTO
+    )
+    # מצב בו המערכת לא מצליחה לסווג לקטגוריה
+    is_uncategorized = models.BooleanField(default=False)
+    
+    # המערכת/AI מסמן אם העסקה חשודה (לדוגמה: שינוי סכום חד, מודל לא בטוח)
+    is_flagged = models.BooleanField(default=False)
+
+    # מוכן לעתיד: MCC יגיע כשהמערכת תשתמש ב-Open Banking
+    mcc = models.IntegerField(null=True, blank=True)
+
+    
+    
     history = HistoricalRecords()
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
-
+    
+    def __str__(self):
+        return f"{self.date} - {self.description} ({self.amount})"
 
 class MonthlySummary(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
