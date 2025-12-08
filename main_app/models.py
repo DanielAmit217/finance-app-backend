@@ -151,8 +151,8 @@ class Category(models.Model):
     #  color = models.CharField(max_length=10, blank=True, null=True)
     #  icon = models.CharField(max_length=50, blank=True, null=True)
 
-    #  created_at = models.DateTimeField(auto_now_add=True)
-    #updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -232,11 +232,12 @@ class Transaction(models.Model):
     # מצב בו המערכת לא מצליחה לסווג לקטגוריה
     is_uncategorized = models.BooleanField(default=False)
     
-    # המערכת/AI מסמן אם העסקה חשודה (לדוגמה: שינוי סכום חד, מודל לא בטוח)
+    # המערכת/AI מסמן אם העסקה חשודה (לדוגמה: שינוי סכום חד, חיוב כפול )
     is_flagged = models.BooleanField(default=False)
-
+    #  אם סכום העסקה גדול משמעותית פי 2-3 ממוצע ההוצאות בקטגוריה
+    is_exptional=models.BooleanField(default=False)
     # מוכן לעתיד: MCC יגיע כשהמערכת תשתמש ב-Open Banking
-    mcc = models.IntegerField(null=True, blank=True)
+    #mcc = models.IntegerField(null=True, blank=True)
 
     
     
@@ -246,6 +247,9 @@ class Transaction(models.Model):
     
     def __str__(self):
         return f"{self.date} - {self.description} ({self.amount})"
+    
+class IncomeProfile(models.Model):
+    
 
 class MonthlySummary(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
