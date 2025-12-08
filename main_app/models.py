@@ -19,8 +19,7 @@ class User(AbstractUser):
     phone = models.CharField(max_length=10, unique=True)
     USERNAME_FIELD="phone"
     REQUIRED_FIELDS=[]
-   # is_phone_verfied=
-    preferred_currency = models.CharField(max_length=5, default="ILS")
+    is_phone_verfied=models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -33,8 +32,41 @@ class User(AbstractUser):
         ],
         default="free"
     )
+
+class UserSettings(models.Model):
+    
+    user = models.OneToOneField(
+       settings.AUTH_USER_MODEL,
+       on_delete=models.CASCADE,
+       related_name="settings")
+    
+    preferred_currency = models.CharField(max_length=5, default="ILS")
+    notifications_enabled = models.BooleanField(default=True)
+    
+    notification_level = models.CharField(max_length=20, choices=[
+        ("minimal", "Minimal"),
+        ("standard", "Standard"),
+        ("detailed", "Detailed")
+    ], default="standard")
+    
+    knowledge_level = models.CharField(
+    max_length=20,
+    choices=[
+        ("beginner", "Beginner"),
+        ("intermediate", "Intermediate"),
+    ], default="beginner")
+    
+    interaction_style = models.CharField(max_length=20, choices=[
+        ("gentle", "Gentle"),
+        ("balanced", "Balanced"),
+        ("direct","Direct")], default="balanced")
+    
+
+    
+    
+
 # צריך להסויף עוד מכשירים פינסים אחר כך
-class Account(models.Model):
+class FinanicalAccounts(models.Model):
     
     
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="accounts")
@@ -46,12 +78,16 @@ class Account(models.Model):
     #    ("pension_account", "Pension Account")
     )
     
+    account_type = models.CharField(
+        max_length=20,
+        choices=ACCOUNT_TYPES,
+    )
+    
     PROVIDERS = (
         ("pepper", "Pepper"),
         ("leumi", "Bank Leumi"),
         ("max", "Max Credit"),
         ("isracard", "Isracard"),
-        ("cal", "CAL"),
         ("unknown", "Unknown Provider"))
     
     provider = models.CharField(
@@ -60,10 +96,7 @@ class Account(models.Model):
         default="unknown")
     
    
-    account_type = models.CharField(
-        max_length=20,
-        choices=ACCOUNT_TYPES,
-    )
+   
     
     initial_balance = MoneyField(
         max_digits=10, decimal_places=2, default_currency="ILS"
@@ -75,9 +108,56 @@ class Account(models.Model):
     history = HistoricalRecords()
     last_synced = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    
 
+class Category(models.Model):
+    # שם הקטגוריה (לדוגמה: Food, Shopping, Transport)
+    name = models.CharField(max_length=50, unique=True)
 
+    # מילות מפתח לזיהוי אוטומטי (טקסט מופרד בפסיקים)
+    keywords = models.TextField(
+        blank=True,
+        help_text="Comma-separated keywords: ארומה, פיצה, קפה"
+    )
+
+    # למידת התנהגות משתמש — קישורים לתיאורים שסווגו בעבר
+    learned_patterns = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="System-learned patterns (auto-added when user categorizes manually)"
+    )
+
+    # קטגוריה של המשתמש או קטגוריה גלובלית של המערכת
+    # user=None → קטגוריה ברירת מחדל
+    # user=<User> → קטגוריה אישית
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="custom_categories"
+    )
+
+    # מוכנים ל-MCC — עדיין לא בשימוש
+    #mcc_codes = models.JSONField(
+    #   null=True,
+    #    blank=True,
+    #   help_text="MCC codes for future Open Banking integration")
+    
+
+    # צבע ואייקון — ל-UI העתידי
+    #  color = models.CharField(max_length=10, blank=True, null=True)
+    #  icon = models.CharField(max_length=50, blank=True, null=True)
+
+    #  created_at = models.DateTimeField(auto_now_add=True)
+    #  updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    
    # לMVP מקבלים CSV של לאומי(ופפר) וכרטיסי MAX וישרכארט
 class Transaction(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
