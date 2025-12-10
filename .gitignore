@@ -1,0 +1,4 @@
+Pipfile.lock
+.env
+db.sqlite3
+copilot-instructions.md

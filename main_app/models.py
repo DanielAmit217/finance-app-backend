@@ -29,6 +29,10 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
 
+    def __str__(self):
+        type_display = self.get_transaction_type_display()
+        return f"{self.amount} {type_display} on {self.date} (account: {self.account.name})"
+
 
 class MonthlySummary(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -39,6 +43,11 @@ class MonthlySummary(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
 
+    def __str__(self):
+        return (
+            f"Summary for {self.month.strftime('%B %Y')} - User: {self.user.username}"
+        )
+
 
 class SourceFile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -47,6 +56,10 @@ class SourceFile(models.Model):
     history = HistoricalRecords()
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        filename = os.path.basename(self.file.name)
+        return f"{filename} (Account: {self.account.name})"
 
 
 class Account(models.Model):
@@ -59,3 +72,6 @@ class Account(models.Model):
     history = HistoricalRecords()
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.name} - {self.user.username}"

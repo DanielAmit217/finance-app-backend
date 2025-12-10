@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 django = "*"
+djangorestframework = "*"
+django-money = "*"
+django-simple-history = "*"
 
 [dev-packages]
 
