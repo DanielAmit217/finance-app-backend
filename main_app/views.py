@@ -10,7 +10,9 @@ from .serializers import (
     SignUpSerializer,
     SignInSerializer,
     UserSerializer,
+    UserDetailSerializer,
     AccountSerializer,
+    AccountWithBalanceSerializer,
     TransactionSerializer,
 )
 from .models import Account, Transaction
@@ -225,4 +227,15 @@ class AccountTransactionsView(APIView):
         serializer = TransactionSerializer(
             transactions, many=True, context={"request": request}
         )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DashboardView(APIView):
+    """Get user's dashboard with overall balance, accounts, income, and expenses"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Return user profile with balance information"""
+        serializer = UserDetailSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)

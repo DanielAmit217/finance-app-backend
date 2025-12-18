@@ -78,11 +78,105 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "date_joined"]
 
 
+class UserDetailSerializer(serializers.ModelSerializer):
+    """User serializer with overall balance calculated from all accounts and transactions"""
+
+    overall_balance = serializers.SerializerMethodField()
+    accounts = serializers.SerializerMethodField()
+    total_income = serializers.SerializerMethodField()
+    total_expenses = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "date_joined",
+            "overall_balance",
+            "total_income",
+            "total_expenses",
+            "accounts",
+        ]
+        read_only_fields = [
+            "id",
+            "date_joined",
+            "overall_balance",
+            "total_income",
+            "total_expenses",
+        ]
+
+    def get_overall_balance(self, obj):
+        """Sum balance across all user accounts"""
+        from djmoney.money import Money
+
+        total_balance = Money(0, "USD")
+
+        for account in obj.account_set.all():
+            total_balance += account.balance
+
+        return {
+            "amount": float(total_balance.amount),
+            "currency": str(total_balance.currency),
+            "formatted": f"{total_balance.currency} {total_balance.amount:,.2f}",
+        }
+
+    def get_total_income(self, obj):
+        """Calculate total income across all transactions"""
+        from django.db.models import Sum
+
+        total = Transaction.objects.filter(
+            user=obj, transaction_type=Transaction.INCOME
+        ).aggregate(total=Sum("amount_amount", default=0))["total"]
+
+        return {
+            "amount": float(total),
+            "currency": "USD",
+            "formatted": f"USD {total:,.2f}",
+        }
+
+    def get_total_expenses(self, obj):
+        """Calculate total expenses across all transactions"""
+        from django.db.models import Sum
+
+        total = Transaction.objects.filter(
+            user=obj, transaction_type=Transaction.EXPENSE
+        ).aggregate(total=Sum("amount_amount", default=0))["total"]
+
+        return {
+            "amount": float(total),
+            "currency": "USD",
+            "formatted": f"USD {total:,.2f}",
+        }
+
+    def get_accounts(self, obj):
+        """Return all accounts with their balances"""
+        accounts = obj.account_set.all()
+        return AccountWithBalanceSerializer(accounts, many=True).data
+
+
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ["id", "name", "bank_name", "initial_balance", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "name", "bank_name", "balance", "created_at"]
+        read_only_fields = ["id", "created_at", "balance"]
+
+
+class AccountWithBalanceSerializer(serializers.ModelSerializer):
+    """Account serializer with current balance"""
+
+    class Meta:
+        model = Account
+        fields = [
+            "id",
+            "name",
+            "bank_name",
+            "balance",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at", "balance"]
 
 
 class TransactionSerializer(serializers.ModelSerializer):

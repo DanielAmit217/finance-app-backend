@@ -7,6 +7,8 @@ urlpatterns = [
     # Authentication endpoints
     path("auth/sign-up/", views.SignUpView.as_view(), name="sign_up"),
     path("auth/sign-in/", views.SignInView.as_view(), name="sign_in"),
+    # Dashboard endpoint
+    path("dashboard/", views.DashboardView.as_view(), name="dashboard"),
     # Account endpoints
     path(
         "accounts/", views.AccountListCreateView.as_view(), name="account_list_create"

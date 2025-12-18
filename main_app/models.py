@@ -66,8 +66,8 @@ class Account(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     bank_name = models.CharField(max_length=50, blank=True)
-    initial_balance = MoneyField(
-        max_digits=10, decimal_places=2, default_currency="USD"
+    balance = MoneyField(
+        max_digits=10, decimal_places=2, default_currency="USD", default=0
     )
     history = HistoricalRecords()
     created_at = models.DateTimeField(default=timezone.now)
