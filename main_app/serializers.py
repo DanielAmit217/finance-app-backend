@@ -112,7 +112,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         """Sum balance across all user accounts"""
         from djmoney.money import Money
 
-        total_balance = Money(0, "USD")
+        total_balance = Money(0, "ILS")
 
         for account in obj.account_set.all():
             total_balance += account.balance
@@ -124,58 +124,55 @@ class UserDetailSerializer(serializers.ModelSerializer):
         }
 
     def get_total_income(self, obj):
-        """Calculate total income across all transactions"""
+        """Calculate total income for reporting (exclude counters from user view).
+
+        Note: We EXCLUDE counters here because this is for user reporting.
+        In balance calculations (signals.py), we INCLUDE counters because they're
+        designed as opposite amounts to naturally reverse edits (e.g., +500 and -500 cancel).
+        """
         from django.db.models import Sum
 
         total = Transaction.objects.filter(
-            user=obj, transaction_type=Transaction.INCOME
+            user=obj, transaction_type=Transaction.INCOME, is_counter=False
         ).aggregate(total=Sum("amount_amount", default=0))["total"]
 
         return {
             "amount": float(total),
-            "currency": "USD",
-            "formatted": f"USD {total:,.2f}",
+            "currency": "ILS",
+            "formatted": f"ILS {total:,.2f}",
         }
 
     def get_total_expenses(self, obj):
-        """Calculate total expenses across all transactions"""
+        """Calculate total expenses for reporting (exclude counters from user view).
+
+        Note: We EXCLUDE counters here because this is for user reporting.
+        In balance calculations (signals.py), we INCLUDE counters because they're
+        designed as opposite amounts to naturally reverse edits (e.g., +500 and -500 cancel).
+        """
         from django.db.models import Sum
 
         total = Transaction.objects.filter(
-            user=obj, transaction_type=Transaction.EXPENSE
+            user=obj, transaction_type=Transaction.EXPENSE, is_counter=False
         ).aggregate(total=Sum("amount_amount", default=0))["total"]
 
         return {
             "amount": float(total),
-            "currency": "USD",
-            "formatted": f"USD {total:,.2f}",
+            "currency": "ILS",
+            "formatted": f"ILS {total:,.2f}",
         }
 
     def get_accounts(self, obj):
         """Return all accounts with their balances"""
         accounts = obj.account_set.all()
-        return AccountWithBalanceSerializer(accounts, many=True).data
+        return AccountSerializer(accounts, many=True).data
 
 
 class AccountSerializer(serializers.ModelSerializer):
+    """Account serializer with current balance (read-only)"""
+    
     class Meta:
         model = Account
         fields = ["id", "name", "bank_name", "balance", "created_at"]
-        read_only_fields = ["id", "created_at", "balance"]
-
-
-class AccountWithBalanceSerializer(serializers.ModelSerializer):
-    """Account serializer with current balance"""
-
-    class Meta:
-        model = Account
-        fields = [
-            "id",
-            "name",
-            "bank_name",
-            "balance",
-            "created_at",
-        ]
         read_only_fields = ["id", "created_at", "balance"]
 
 

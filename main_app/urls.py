@@ -1,5 +1,11 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
+
+# Create router and register viewsets
+router = DefaultRouter()
+router.register(r"accounts", views.AccountViewSet, basename="account")
+router.register(r"transactions", views.TransactionViewSet, basename="transaction")
 
 urlpatterns = [
     # Home endpoint
@@ -9,29 +15,6 @@ urlpatterns = [
     path("auth/sign-in/", views.SignInView.as_view(), name="sign_in"),
     # Dashboard endpoint
     path("dashboard/", views.DashboardView.as_view(), name="dashboard"),
-    # Account endpoints
-    path(
-        "accounts/", views.AccountListCreateView.as_view(), name="account_list_create"
-    ),
-    path(
-        "accounts/<int:account_id>/",
-        views.AccountDetailView.as_view(),
-        name="account_detail",
-    ),
-    path(
-        "accounts/<int:account_id>/transactions/",
-        views.AccountTransactionsView.as_view(),
-        name="account_transactions",
-    ),
-    # Transaction endpoints
-    path(
-        "transactions/",
-        views.TransactionListCreateView.as_view(),
-        name="transaction_list_create",
-    ),
-    path(
-        "transactions/<int:transaction_id>/",
-        views.TransactionDetailView.as_view(),
-        name="transaction_detail",
-    ),
+    # Router-generated endpoints (accounts + transactions)
+    path("", include(router.urls)),
 ]
